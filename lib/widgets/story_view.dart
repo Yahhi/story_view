@@ -9,6 +9,16 @@ import '../utils.dart';
 import 'story_image.dart';
 import 'story_video.dart';
 
+Widget _bluredContentWrapper(Widget content, {bool enableBlur = false}) {
+  if (enableBlur) {
+    return Positioned.fill(
+        child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: enableBlur ? 2 : 0, sigmaY: enableBlur ? 2 : 0), child: content));
+  }
+
+  return content;
+}
+
 /// Indicates where the progress indicators should be placed.
 enum ProgressPosition { top, bottom }
 
@@ -53,6 +63,7 @@ class StoryItem {
   ///
   /// Works for inline and full-page stories. See [StoryView.inline] for more on
   /// what inline/full-page means.
+
   static StoryItem text({
     @required String title,
     @required Color backgroundColor,
@@ -111,17 +122,17 @@ class StoryItem {
 
   /// Factory constructor for page images. [controller] should be same instance as
   /// one passed to the `StoryView`
-  factory StoryItem.pageImage({
-    @required String url,
-    @required StoryController controller,
-    Key key,
-    BoxFit imageFit = BoxFit.fitWidth,
-    String caption,
-    Widget hapticContent,
-    bool shown = false,
-    Map<String, dynamic> requestHeaders,
-    Duration duration,
-  }) {
+  factory StoryItem.pageImage(
+      {@required String url,
+      @required StoryController controller,
+      Key key,
+      BoxFit imageFit = BoxFit.fitWidth,
+      String caption,
+      Widget hapticContent,
+      bool shown = false,
+      Map<String, dynamic> requestHeaders,
+      Duration duration,
+      bool enableBlur = false}) {
     return StoryItem(
       Container(
         key: key,
@@ -134,32 +145,34 @@ class StoryItem {
               fit: imageFit,
               requestHeaders: requestHeaders,
             ),
-            SafeArea(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  width: double.infinity,
-                  margin: EdgeInsets.only(
-                    bottom: 24,
+            _bluredContentWrapper(
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      width: double.infinity,
+                      margin: EdgeInsets.only(
+                        bottom: 24,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
+                      color: caption != null ? Colors.black54 : Colors.transparent,
+                      child: caption != null
+                          ? Text(
+                              caption,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            )
+                          : SizedBox(),
+                    ),
                   ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
-                  ),
-                  color: caption != null ? Colors.black54 : Colors.transparent,
-                  child: caption != null
-                      ? Text(
-                          caption,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.center,
-                        )
-                      : SizedBox(),
                 ),
-              ),
-            )
+                enableBlur: enableBlur)
           ],
         ),
       ),
@@ -256,8 +269,7 @@ class StoryItem {
                     width: double.infinity,
                     margin: EdgeInsets.only(bottom: 24),
                     padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    color:
-                        caption != null ? Colors.black54 : Colors.transparent,
+                    color: caption != null ? Colors.black54 : Colors.transparent,
                     child: caption != null
                         ? Text(
                             caption,
@@ -315,8 +327,7 @@ class StoryItem {
                       horizontal: 24,
                       vertical: 8,
                     ),
-                    color:
-                        caption != null ? Colors.black54 : Colors.transparent,
+                    color: caption != null ? Colors.black54 : Colors.transparent,
                     child: caption != null
                         ? Text(
                             caption,
@@ -440,8 +451,7 @@ class StoryView extends StatefulWidget {
     this.onHorizontalSwipeForward,
     this.onHorizontalSwipeBackward,
     this.onVerticalSwipeComplete,
-  })  : assert(storyItems != null && storyItems.length > 0,
-            "[storyItems] should not be null or empty"),
+  })  : assert(storyItems != null && storyItems.length > 0, "[storyItems] should not be null or empty"),
         assert(progressPosition != null, "[progressPosition] cannot be null"),
         assert(
           repeat != null,
@@ -464,10 +474,9 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 
   VerticalDragInfo verticalDragInfo;
 
-  StoryItem get _currentStory =>
-      widget.storyItems.firstWhere((it) => !it.shown, orElse: () => null);
-  StoryItem get _currentOrLastStory => widget.storyItems
-      .firstWhere((it) => !it.shown, orElse: () => widget.storyItems.last);
+  StoryItem get _currentStory => widget.storyItems.firstWhere((it) => !it.shown, orElse: () => null);
+  StoryItem get _currentOrLastStory =>
+      widget.storyItems.firstWhere((it) => !it.shown, orElse: () => widget.storyItems.last);
 
   Widget get _currentView => _currentOrLastStory.view;
 
@@ -495,8 +504,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       });
     }
 
-    this._playbackSubscription =
-        widget.controller.playbackNotifier.listen((playbackStatus) {
+    this._playbackSubscription = widget.controller.playbackNotifier.listen((playbackStatus) {
       switch (playbackStatus) {
         case PlaybackState.play:
           _removeNextHold();
@@ -551,8 +559,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       widget.onStoryShow(storyItem);
     }
 
-    _animationController =
-        AnimationController(duration: storyItem.duration, vsync: this);
+    _animationController = AnimationController(duration: storyItem.duration, vsync: this);
 
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -566,8 +573,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       }
     });
 
-    _currentAnimation =
-        Tween(begin: 0.0, end: 1.0).animate(_animationController);
+    _currentAnimation = Tween(begin: 0.0, end: 1.0).animate(_animationController);
 
     widget.controller.play();
   }
@@ -651,11 +657,9 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     return GestureDetector(
       onHorizontalDragEnd: widget.enableHorizontalSwipe
           ? (details) {
-              if (details.primaryVelocity > 0 &&
-                  widget.onHorizontalSwipeBackward != null) {
+              if (details.primaryVelocity > 0 && widget.onHorizontalSwipeBackward != null) {
                 widget.onHorizontalSwipeBackward();
-              } else if (details.primaryVelocity < 0 &&
-                  widget.onHorizontalSwipeForward != null) {
+              } else if (details.primaryVelocity < 0 && widget.onHorizontalSwipeForward != null) {
                 widget.onHorizontalSwipeForward();
               }
             }
@@ -666,9 +670,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
           children: <Widget>[
             _currentView,
             Align(
-              alignment: widget.progressPosition == ProgressPosition.top
-                  ? Alignment.topCenter
-                  : Alignment.bottomCenter,
+              alignment: widget.progressPosition == ProgressPosition.top ? Alignment.topCenter : Alignment.bottomCenter,
               child: SafeArea(
                 bottom: widget.inline ? false : true,
                 // we use SafeArea here for notched and bezeles phones
@@ -678,14 +680,10 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                     vertical: 8,
                   ),
                   child: PageBar(
-                    widget.storyItems
-                        .map((it) => PageData(it.duration, it.shown))
-                        .toList(),
+                    widget.storyItems.map((it) => PageData(it.duration, it.shown)).toList(),
                     this._currentAnimation,
                     key: UniqueKey(),
-                    indicatorHeight: widget.inline
-                        ? IndicatorHeight.small
-                        : IndicatorHeight.large,
+                    indicatorHeight: widget.inline ? IndicatorHeight.small : IndicatorHeight.large,
                   ),
                 ),
               ),
@@ -734,10 +732,8 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                       : (details) {
                           widget.controller.play();
                           // finish up drag cycle
-                          if (!verticalDragInfo.cancel &&
-                              widget.onVerticalSwipeComplete != null) {
-                            widget.onVerticalSwipeComplete(
-                                verticalDragInfo.direction);
+                          if (!verticalDragInfo.cancel && widget.onVerticalSwipeComplete != null) {
+                            widget.onVerticalSwipeComplete(verticalDragInfo.direction);
                           }
 
                           verticalDragInfo = null;
@@ -812,8 +808,7 @@ class PageBarState extends State<PageBar> {
   }
 
   bool isPlaying(PageData page) {
-    return widget.pages.firstWhere((it) => !it.shown, orElse: () => null) ==
-        page;
+    return widget.pages.firstWhere((it) => !it.shown, orElse: () => null) == page;
   }
 
   @override
@@ -822,12 +817,10 @@ class PageBarState extends State<PageBar> {
       children: widget.pages.map((it) {
         return Expanded(
           child: Container(
-            padding: EdgeInsets.only(
-                right: widget.pages.last == it ? 0 : this.spacing),
+            padding: EdgeInsets.only(right: widget.pages.last == it ? 0 : this.spacing),
             child: StoryProgressIndicator(
               isPlaying(it) ? widget.animation.value : (it.shown ? 1 : 0),
-              indicatorHeight:
-                  widget.indicatorHeight == IndicatorHeight.large ? 5 : 3,
+              indicatorHeight: widget.indicatorHeight == IndicatorHeight.large ? 5 : 3,
             ),
           ),
         );
@@ -846,8 +839,7 @@ class StoryProgressIndicator extends StatelessWidget {
   StoryProgressIndicator(
     this.value, {
     this.indicatorHeight = 5,
-  }) : assert(indicatorHeight != null && indicatorHeight > 0,
-            "[indicatorHeight] should not be null or less than 1");
+  }) : assert(indicatorHeight != null && indicatorHeight > 0, "[indicatorHeight] should not be null or less than 1");
 
   @override
   Widget build(BuildContext context) {
@@ -877,9 +869,7 @@ class IndicatorOval extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = this.color;
     canvas.drawRRect(
-        RRect.fromRectAndRadius(
-            Rect.fromLTWH(0, 0, size.width * this.widthFactor, size.height),
-            Radius.circular(3)),
+        RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width * this.widthFactor, size.height), Radius.circular(3)),
         paint);
   }
 
@@ -894,16 +884,13 @@ class ContrastHelper {
   static double luminance(int r, int g, int b) {
     final a = [r, g, b].map((it) {
       final value = it.toDouble() / 255.0;
-      return value <= 0.03928
-          ? value / 12.92
-          : pow((value + 0.055) / 1.055, 2.4);
+      return value <= 0.03928 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4);
     }).toList();
 
     return (a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722).toDouble();
   }
 
   static double contrast(List<int> rgb1, List<int> rgb2) {
-    return luminance(rgb2[0], rgb2[1], rgb2[2]) /
-        luminance(rgb1[0], rgb1[1], rgb1[2]);
+    return luminance(rgb2[0], rgb2[1], rgb2[2]) / luminance(rgb1[0], rgb1[1], rgb1[2]);
   }
 }
