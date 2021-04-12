@@ -12,8 +12,10 @@ import 'story_video.dart';
 Widget _bluredContentWrapper(Widget content, {double blurEffect = 0}) {
   if (blurEffect > 0) {
     return Positioned.fill(
-        child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: blurEffect, sigmaY: blurEffect), child: content));
+        child: ClipRect(
+          child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blurEffect, sigmaY: blurEffect), child: content),
+        ));
   }
 
   return content;
@@ -132,6 +134,7 @@ class StoryItem {
       bool shown = false,
       Map<String, dynamic> requestHeaders,
       Duration duration,
+      Gradient gradient,
       double blurEffect = 0}) {
     return StoryItem(
       Container(
@@ -172,7 +175,10 @@ class StoryItem {
                     ),
                   ),
                 ),
-                blurEffect: blurEffect)
+                blurEffect: blurEffect),
+                if (gradient != null) Positioned.fill(child: Container(
+                  decoration: BoxDecoration(gradient: gradient),
+                ))
           ],
         ),
       ),
