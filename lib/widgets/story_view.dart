@@ -9,11 +9,11 @@ import '../utils.dart';
 import 'story_image.dart';
 import 'story_video.dart';
 
-Widget _bluredContentWrapper(Widget content, {bool enableBlur = false}) {
-  if (enableBlur) {
+Widget _bluredContentWrapper(Widget content, {double blurEffect = 0}) {
+  if (blurEffect > 0) {
     return Positioned.fill(
         child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: enableBlur ? 2 : 0, sigmaY: enableBlur ? 2 : 0), child: content));
+            filter: ImageFilter.blur(sigmaX: blurEffect, sigmaY: blurEffect), child: content));
   }
 
   return content;
@@ -132,7 +132,7 @@ class StoryItem {
       bool shown = false,
       Map<String, dynamic> requestHeaders,
       Duration duration,
-      bool enableBlur = false}) {
+      double blurEffect = 0}) {
     return StoryItem(
       Container(
         key: key,
@@ -172,7 +172,7 @@ class StoryItem {
                     ),
                   ),
                 ),
-                enableBlur: enableBlur)
+                blurEffect: blurEffect)
           ],
         ),
       ),
