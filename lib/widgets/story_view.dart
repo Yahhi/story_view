@@ -34,7 +34,7 @@ enum IndicatorHeight { small, large }
 class StoryItem {
   /// Specifies how long the page should be displayed. It should be a reasonable
   /// amount of time greater than 0 milliseconds.
-  final Duration duration;
+  final Duration? duration;
 
   /// Has this page been shown already? This is used to indicate that the page
   /// has been displayed. If some pages are supposed to be skipped in a story,
@@ -48,7 +48,7 @@ class StoryItem {
 
   /// Content of the story, witch has haptic logics. So it should be at the top of
   /// the Stack to handle haptic events
-  final Widget hapticContent;
+  final Widget? hapticContent;
 
   /// The page content
   final Widget view;
@@ -69,16 +69,16 @@ class StoryItem {
   /// what inline/full-page means.
 
   static StoryItem text({
-    String title,
-    Color backgroundColor,
-    Key key,
-    TextStyle textStyle,
+    String? title,
+    Color? backgroundColor,
+    Key? key,
+    TextStyle? textStyle,
     bool shown = false,
     bool roundedTop = false,
     bool roundedBottom = false,
-    Widget hapticContent,
-    Duration duration,
-    Gradient gradient,
+    Widget? hapticContent,
+    Duration? duration,
+    Gradient? gradient,
   }) {
     final double contrast = backgroundColor == null
         ? 2
@@ -111,7 +111,7 @@ class StoryItem {
           child: title?.isEmpty ?? true
               ? const SizedBox.shrink()
               : Text(
-                  title,
+                  title!,
                   style: textStyle?.copyWith(
                         color: contrast > 1.8 ? Colors.white : Colors.black,
                       ) ??
@@ -133,16 +133,16 @@ class StoryItem {
   /// Factory constructor for page images. [controller] should be same instance as
   /// one passed to the `StoryView`
   factory StoryItem.pageImage(
-      {@required String url,
-      @required StoryController controller,
-      Key key,
+      {required String url,
+      required StoryController controller,
+      Key? key,
       BoxFit imageFit = BoxFit.fitWidth,
-      String caption,
-      Widget hapticContent,
+      String? caption,
+      Widget? hapticContent,
       bool shown = false,
-      Map<String, dynamic> requestHeaders,
-      Duration duration,
-      Gradient gradient,
+      Map<String, dynamic>? requestHeaders,
+      Duration? duration,
+      Gradient? gradient,
       double blurEffect = 0}) {
     return StoryItem(
       Container(
@@ -169,8 +169,7 @@ class StoryItem {
                         horizontal: 24,
                         vertical: 8,
                       ),
-                      color:
-                          caption != null ? Colors.black54 : Colors.transparent,
+                      color: caption != null ? Colors.black54 : Colors.transparent,
                       child: caption != null
                           ? Text(
                               caption,
@@ -202,17 +201,17 @@ class StoryItem {
   /// Shorthand for creating inline image. [controller] should be same instance as
   /// one passed to the `StoryView`
   factory StoryItem.inlineImage({
-    @required String url,
-    @required Text caption,
-    @required StoryController controller,
-    Key key,
+    required String url,
+    required Text caption,
+    required StoryController controller,
+    Key? key,
     BoxFit imageFit = BoxFit.cover,
-    Map<String, dynamic> requestHeaders,
+    Map<String, dynamic>? requestHeaders,
     bool shown = false,
     bool roundedTop = true,
     bool roundedBottom = false,
-    Widget hapticContent,
-    Duration duration,
+    Widget? hapticContent,
+    Duration? duration,
   }) {
     return StoryItem(
       ClipRRect(
@@ -235,7 +234,7 @@ class StoryItem {
                   child: Align(
                     alignment: Alignment.bottomLeft,
                     child: Container(
-                      child: caption == null ? SizedBox() : caption,
+                      child: caption,
                       width: double.infinity,
                     ),
                   ),
@@ -259,14 +258,14 @@ class StoryItem {
   /// one passed to the `StoryView`
   factory StoryItem.pageVideo(
     String url, {
-    @required StoryController controller,
-    Key key,
-    Duration duration,
+    required StoryController controller,
+    Key? key,
+    Duration? duration,
     BoxFit imageFit = BoxFit.fitWidth,
-    String caption,
-    Widget hapticContent,
+    String? caption,
+    Widget? hapticContent,
     bool shown = false,
-    Map<String, dynamic> requestHeaders,
+    Map<String, dynamic>? requestHeaders,
   }) {
     return StoryItem(
         Container(
@@ -286,8 +285,7 @@ class StoryItem {
                     width: double.infinity,
                     margin: EdgeInsets.only(bottom: 24),
                     padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    color:
-                        caption != null ? Colors.black54 : Colors.transparent,
+                    color: caption != null ? Colors.black54 : Colors.transparent,
                     child: caption != null
                         ? Text(
                             caption,
@@ -311,14 +309,13 @@ class StoryItem {
   /// up.
   factory StoryItem.pageProviderImage(
     ImageProvider image, {
-    Key key,
+    Key? key,
     BoxFit imageFit = BoxFit.fitWidth,
-    String caption,
-    Widget hapticContent,
+    String? caption,
+    Widget? hapticContent,
     bool shown = false,
-    Duration duration,
+    Duration? duration,
   }) {
-    assert(imageFit != null, "[imageFit] should not be null");
     return StoryItem(
         Container(
           key: key,
@@ -345,8 +342,7 @@ class StoryItem {
                       horizontal: 24,
                       vertical: 8,
                     ),
-                    color:
-                        caption != null ? Colors.black54 : Colors.transparent,
+                    color: caption != null ? Colors.black54 : Colors.transparent,
                     child: caption != null
                         ? Text(
                             caption,
@@ -373,13 +369,13 @@ class StoryItem {
   /// up.
   factory StoryItem.inlineProviderImage(
     ImageProvider image, {
-    Key key,
-    Text caption,
-    Widget hapticContent,
+    Key? key,
+    Text? caption,
+    Widget? hapticContent,
     bool shown = false,
     bool roundedTop = true,
     bool roundedBottom = false,
-    Duration duration,
+    Duration? duration,
   }) {
     return StoryItem(
       Container(
@@ -427,16 +423,16 @@ class StoryView extends StatefulWidget {
 
   /// Callback for when a full cycle of story is shown. This will be called
   /// each time the full story completes when [repeat] is set to `true`.
-  final VoidCallback onComplete;
+  final VoidCallback? onComplete;
 
   /// Callback for when a vertical swipe gesture is detected. If you do not
   /// want to listen to such event, do not provide it. For instance,
   /// for inline stories inside ListViews, it is preferrable to not to
   /// provide this callback so as to enable scroll events on the list view.
-  final Function(Direction) onVerticalSwipeComplete;
+  final Function(Direction)? onVerticalSwipeComplete;
 
   /// Callback for when a story is currently being shown.
-  final ValueChanged<StoryItem> onStoryShow;
+  final ValueChanged<StoryItem>? onStoryShow;
 
   /// Where the progress indicator should be placed.
   final ProgressPosition progressPosition;
@@ -454,13 +450,13 @@ class StoryView extends StatefulWidget {
 
   final bool enableHorizontalSwipe;
 
-  final VoidCallback onHorizontalSwipeForward;
+  final VoidCallback? onHorizontalSwipeForward;
 
-  final VoidCallback onHorizontalSwipeBackward;
+  final VoidCallback? onHorizontalSwipeBackward;
 
   StoryView({
-    @required this.storyItems,
-    @required this.controller,
+    required this.storyItems,
+    required this.controller,
     this.onComplete,
     this.onStoryShow,
     this.progressPosition = ProgressPosition.top,
@@ -470,14 +466,7 @@ class StoryView extends StatefulWidget {
     this.onHorizontalSwipeForward,
     this.onHorizontalSwipeBackward,
     this.onVerticalSwipeComplete,
-  })  : assert(storyItems != null && storyItems.length > 0,
-            "[storyItems] should not be null or empty"),
-        assert(progressPosition != null, "[progressPosition] cannot be null"),
-        assert(
-          repeat != null,
-          "[repeat] cannot be null",
-        ),
-        assert(inline != null, "[inline] cannot be null");
+  }) : assert(storyItems.length > 0, "[storyItems] should not be null or empty");
 
   @override
   State<StatefulWidget> createState() {
@@ -486,18 +475,24 @@ class StoryView extends StatefulWidget {
 }
 
 class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
-  AnimationController _animationController;
-  Animation<double> _currentAnimation;
-  Timer _nextDebouncer;
+  AnimationController? _animationController;
+  Animation<double>? _currentAnimation;
+  Timer? _nextDebouncer;
 
-  StreamSubscription<PlaybackState> _playbackSubscription;
+  StreamSubscription<PlaybackState>? _playbackSubscription;
 
-  VerticalDragInfo verticalDragInfo;
+  VerticalDragInfo? verticalDragInfo;
 
-  StoryItem get _currentStory =>
-      widget.storyItems.firstWhere((it) => !it.shown, orElse: () => null);
-  StoryItem get _currentOrLastStory => widget.storyItems
-      .firstWhere((it) => !it.shown, orElse: () => widget.storyItems.last);
+  StoryItem? get _currentStory {
+    final index = widget.storyItems.indexWhere((it) => !it.shown);
+    if (index == -1) {
+      return null;
+    } else {
+      return widget.storyItems[index];
+    }
+  }
+
+  StoryItem get _currentOrLastStory => widget.storyItems.firstWhere((it) => !it.shown, orElse: () => widget.storyItems.last);
 
   Widget get _currentView => _currentOrLastStory.view;
 
@@ -508,25 +503,19 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     // All pages after the first unshown page should have their shown value as
     // false
 
-    final firstPage = widget.storyItems.firstWhere((it) {
-      return !it.shown;
-    }, orElse: () {
-      widget.storyItems.forEach((it2) {
-        it2.shown = false;
-      });
+    final lastShownPos = widget.storyItems.indexWhere((it) => !it.shown);
 
-      return null;
-    });
-
-    if (firstPage != null) {
-      final lastShownPos = widget.storyItems.indexOf(firstPage);
+    if (lastShownPos != -1) {
       widget.storyItems.sublist(lastShownPos).forEach((it) {
         it.shown = false;
       });
+    } else {
+      widget.storyItems.forEach((it2) {
+        it2.shown = false;
+      });
     }
 
-    this._playbackSubscription =
-        widget.controller.playbackNotifier.listen((playbackStatus) {
+    this._playbackSubscription = widget.controller.playbackNotifier.listen((playbackStatus) {
       switch (playbackStatus) {
         case PlaybackState.play:
           _removeNextHold();
@@ -578,13 +567,12 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     });
 
     if (widget.onStoryShow != null) {
-      widget.onStoryShow(storyItem);
+      widget.onStoryShow!(storyItem);
     }
 
-    _animationController =
-        AnimationController(duration: storyItem.duration, vsync: this);
+    _animationController = AnimationController(duration: storyItem.duration, vsync: this);
 
-    _animationController.addStatusListener((status) {
+    _animationController!.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         storyItem.shown = true;
         if (widget.storyItems.last != storyItem) {
@@ -596,8 +584,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       }
     });
 
-    _currentAnimation =
-        Tween(begin: 0.0, end: 1.0).animate(_animationController);
+    _currentAnimation = Tween(begin: 0.0, end: 1.0).animate(_animationController!);
 
     widget.controller.play();
   }
@@ -610,7 +597,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
   void _onComplete() {
     if (widget.onComplete != null) {
       widget.controller.pause();
-      widget.onComplete();
+      widget.onComplete!();
     }
 
     if (widget.repeat) {
@@ -623,17 +610,18 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
   }
 
   void _goBack() {
-    _animationController.stop();
+    _animationController?.stop();
 
     if (this._currentStory == null) {
       widget.storyItems.last.shown = false;
+      return;
     }
 
     if (this._currentStory == widget.storyItems.first) {
       _beginPlay();
     } else {
-      this._currentStory.shown = false;
-      final int lastPos = widget.storyItems.indexOf(this._currentStory);
+      this._currentStory!.shown = false;
+      final int lastPos = widget.storyItems.indexOf(this._currentStory!);
       final previous = widget.storyItems[lastPos - 1];
 
       previous.shown = false;
@@ -644,7 +632,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 
   void _goForward() {
     if (this._currentStory != widget.storyItems.last) {
-      _animationController.stop();
+      _animationController?.stop();
 
       // get last showing
       final _last = this._currentStory;
@@ -657,7 +645,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       }
     } else {
       // this is the last page, progress animation should skip to end
-      _animationController.animateTo(1.0, duration: Duration(milliseconds: 10));
+      _animationController?.animateTo(1.0, duration: Duration(milliseconds: 10));
     }
   }
 
@@ -681,12 +669,11 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     return GestureDetector(
       onHorizontalDragEnd: widget.enableHorizontalSwipe
           ? (details) {
-              if (details.primaryVelocity > 0 &&
-                  widget.onHorizontalSwipeBackward != null) {
-                widget.onHorizontalSwipeBackward();
-              } else if (details.primaryVelocity < 0 &&
-                  widget.onHorizontalSwipeForward != null) {
-                widget.onHorizontalSwipeForward();
+              if (details.primaryVelocity == null) return;
+              if (details.primaryVelocity! > 0 && widget.onHorizontalSwipeBackward != null) {
+                widget.onHorizontalSwipeBackward!();
+              } else if (details.primaryVelocity! < 0 && widget.onHorizontalSwipeForward != null) {
+                widget.onHorizontalSwipeForward!();
               }
             }
           : null,
@@ -696,9 +683,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
           children: <Widget>[
             _currentView,
             Align(
-              alignment: widget.progressPosition == ProgressPosition.top
-                  ? Alignment.topCenter
-                  : Alignment.bottomCenter,
+              alignment: widget.progressPosition == ProgressPosition.top ? Alignment.topCenter : Alignment.bottomCenter,
               child: SafeArea(
                 bottom: widget.inline ? false : true,
                 // we use SafeArea here for notched and bezeles phones
@@ -708,14 +693,10 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                     vertical: 8,
                   ),
                   child: PageBar(
-                    widget.storyItems
-                        .map((it) => PageData(it.duration, it.shown))
-                        .toList(),
+                    widget.storyItems.map((it) => PageData(it.duration ?? Duration(), it.shown)).toList(),
                     this._currentAnimation,
                     key: UniqueKey(),
-                    indicatorHeight: widget.inline
-                        ? IndicatorHeight.small
-                        : IndicatorHeight.large,
+                    indicatorHeight: widget.inline ? IndicatorHeight.small : IndicatorHeight.large,
                   ),
                 ),
               ),
@@ -755,7 +736,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                             verticalDragInfo = VerticalDragInfo();
                           }
 
-                          verticalDragInfo.update(details.primaryDelta);
+                          verticalDragInfo!.update(details.primaryDelta ?? 0);
 
                           // TODO: provide callback interface for animation purposes
                         },
@@ -764,10 +745,8 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                       : (details) {
                           widget.controller.play();
                           // finish up drag cycle
-                          if (!verticalDragInfo.cancel &&
-                              widget.onVerticalSwipeComplete != null) {
-                            widget.onVerticalSwipeComplete(
-                                verticalDragInfo.direction);
+                          if (!verticalDragInfo!.cancel) {
+                            widget.onVerticalSwipeComplete!(verticalDragInfo!.direction!);
                           }
 
                           verticalDragInfo = null;
@@ -803,14 +782,14 @@ class PageData {
 /// [pages] provided.
 class PageBar extends StatefulWidget {
   final List<PageData> pages;
-  final Animation<double> animation;
+  final Animation<double>? animation;
   final IndicatorHeight indicatorHeight;
 
   PageBar(
     this.pages,
     this.animation, {
     this.indicatorHeight = IndicatorHeight.large,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -829,7 +808,7 @@ class PageBarState extends State<PageBar> {
     final int count = widget.pages.length;
     spacing = (count > 15) ? 1 : ((count > 10) ? 2 : 4);
 
-    widget.animation.addListener(() {
+    widget.animation?.addListener(() {
       setState(() {});
     });
   }
@@ -842,8 +821,8 @@ class PageBarState extends State<PageBar> {
   }
 
   bool isPlaying(PageData page) {
-    return widget.pages.firstWhere((it) => !it.shown, orElse: () => null) ==
-        page;
+    final index = widget.pages.indexWhere((it) => !it.shown);
+    return index != -1 && widget.pages[index] == page;
   }
 
   @override
@@ -852,12 +831,10 @@ class PageBarState extends State<PageBar> {
       children: widget.pages.map((it) {
         return Expanded(
           child: Container(
-            padding: EdgeInsets.only(
-                right: widget.pages.last == it ? 0 : this.spacing),
+            padding: EdgeInsets.only(right: widget.pages.last == it ? 0 : this.spacing),
             child: StoryProgressIndicator(
-              isPlaying(it) ? widget.animation.value : (it.shown ? 1 : 0),
-              indicatorHeight:
-                  widget.indicatorHeight == IndicatorHeight.large ? 5 : 3,
+              isPlaying(it) ? widget.animation?.value ?? 0 : (it.shown ? 1 : 0),
+              indicatorHeight: widget.indicatorHeight == IndicatorHeight.large ? 5 : 3,
             ),
           ),
         );
@@ -876,8 +853,7 @@ class StoryProgressIndicator extends StatelessWidget {
   StoryProgressIndicator(
     this.value, {
     this.indicatorHeight = 5,
-  }) : assert(indicatorHeight != null && indicatorHeight > 0,
-            "[indicatorHeight] should not be null or less than 1");
+  }) : assert(indicatorHeight > 0, "[indicatorHeight] should not be null or less than 1");
 
   @override
   Widget build(BuildContext context) {
@@ -906,11 +882,7 @@ class IndicatorOval extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = this.color;
-    canvas.drawRRect(
-        RRect.fromRectAndRadius(
-            Rect.fromLTWH(0, 0, size.width * this.widthFactor, size.height),
-            Radius.circular(3)),
-        paint);
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width * this.widthFactor, size.height), Radius.circular(3)), paint);
   }
 
   @override
@@ -924,16 +896,13 @@ class ContrastHelper {
   static double luminance(int r, int g, int b) {
     final a = [r, g, b].map((it) {
       final value = it.toDouble() / 255.0;
-      return value <= 0.03928
-          ? value / 12.92
-          : pow((value + 0.055) / 1.055, 2.4);
+      return value <= 0.03928 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4);
     }).toList();
 
     return (a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722).toDouble();
   }
 
   static double contrast(List<int> rgb1, List<int> rgb2) {
-    return luminance(rgb2[0], rgb2[1], rgb2[2]) /
-        luminance(rgb1[0], rgb1[1], rgb1[2]);
+    return luminance(rgb2[0], rgb2[1], rgb2[2]) / luminance(rgb1[0], rgb1[1], rgb1[2]);
   }
 }
