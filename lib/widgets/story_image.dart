@@ -29,8 +29,7 @@ class ImageLoader {
       onComplete();
     }
 
-    final fileStream = DefaultCacheManager()
-        .getFileStream(this.url, headers: this.requestHeaders);
+    final fileStream = DefaultCacheManager().getFileStream(this.url, headers: this.requestHeaders);
 
     fileStream.listen(
       (fileResponse) {
@@ -46,8 +45,7 @@ class ImageLoader {
 
         this.state = LoadState.success;
 
-        PaintingBinding.instance.instantiateImageCodec(imageBytes).then(
-            (codec) {
+        PaintingBinding.instance.instantiateImageCodec(imageBytes).then((codec) {
           this.frames = codec;
           onComplete();
         }, onError: (error) {
@@ -114,8 +112,7 @@ class StoryImageState extends State<StoryImage> {
     super.initState();
 
     if (widget.controller != null) {
-      this._streamSubscription =
-          widget.controller.playbackNotifier.listen((playbackState) {
+      this._streamSubscription = widget.controller.playbackNotifier.listen((playbackState) {
         // for the case of gifs we need to pause/play
         if (widget.imageLoader.frames == null) {
           return;
@@ -162,8 +159,7 @@ class StoryImageState extends State<StoryImage> {
   void forward() async {
     this._timer?.cancel();
 
-    if (widget.controller != null &&
-        widget.controller.playbackNotifier.value == PlaybackState.pause) {
+    if (widget.controller != null && widget.controller.playbackNotifier.valueWrapper.value == PlaybackState.pause) {
       return;
     }
 
