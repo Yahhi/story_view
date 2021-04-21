@@ -9,6 +9,20 @@ import '../utils.dart';
 import 'story_image.dart';
 import 'story_video.dart';
 
+Widget _bluredContentWrapper(Widget content, {double blurEffect = 0}) {
+  if (blurEffect > 0) {
+    return Positioned.fill(
+        child: ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: blurEffect, sigmaY: blurEffect),
+        child: content,
+      ),
+    ));
+  }
+
+  return content;
+}
+
 /// Indicates where the progress indicators should be placed.
 enum ProgressPosition { top, bottom }
 
@@ -53,9 +67,10 @@ class StoryItem {
   ///
   /// Works for inline and full-page stories. See [StoryView.inline] for more on
   /// what inline/full-page means.
+
   static StoryItem text({
-    @required String title,
-    @required Color backgroundColor,
+    String title,
+    Color backgroundColor,
     Key key,
     TextStyle textStyle,
     bool shown = false,
@@ -63,21 +78,25 @@ class StoryItem {
     bool roundedBottom = false,
     Widget hapticContent,
     Duration duration,
+    Gradient gradient,
   }) {
-    double contrast = ContrastHelper.contrast([
-      backgroundColor.red,
-      backgroundColor.green,
-      backgroundColor.blue,
-    ], [
-      255,
-      255,
-      255
-    ] /** white text */);
+    final double contrast = backgroundColor == null
+        ? 2
+        : ContrastHelper.contrast([
+            backgroundColor.red,
+            backgroundColor.green,
+            backgroundColor.blue,
+          ], [
+            255,
+            255,
+            255
+          ] /** white text */);
 
     return StoryItem(
       Container(
         key: key,
         decoration: BoxDecoration(
+          gradient: gradient,
           color: backgroundColor,
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(roundedTop ? 8 : 0),
@@ -89,17 +108,19 @@ class StoryItem {
           vertical: 16,
         ),
         child: Center(
-          child: Text(
-            title,
-            style: textStyle?.copyWith(
-                  color: contrast > 1.8 ? Colors.white : Colors.black,
-                ) ??
-                TextStyle(
-                  color: contrast > 1.8 ? Colors.white : Colors.black,
-                  fontSize: 18,
+          child: title?.isEmpty ?? true
+              ? const SizedBox.shrink()
+              : Text(
+                  title,
+                  style: textStyle?.copyWith(
+                        color: contrast > 1.8 ? Colors.white : Colors.black,
+                      ) ??
+                      TextStyle(
+                        color: contrast > 1.8 ? Colors.white : Colors.black,
+                        fontSize: 18,
+                      ),
+                  textAlign: TextAlign.center,
                 ),
-            textAlign: TextAlign.center,
-          ),
         ),
         //color: backgroundColor,
       ),
@@ -111,17 +132,18 @@ class StoryItem {
 
   /// Factory constructor for page images. [controller] should be same instance as
   /// one passed to the `StoryView`
-  factory StoryItem.pageImage({
-    @required String url,
-    @required StoryController controller,
-    Key key,
-    BoxFit imageFit = BoxFit.fitWidth,
-    String caption,
-    Widget hapticContent,
-    bool shown = false,
-    Map<String, dynamic> requestHeaders,
-    Duration duration,
-  }) {
+  factory StoryItem.pageImage(
+      {@required String url,
+      @required StoryController controller,
+      Key key,
+      BoxFit imageFit = BoxFit.fitWidth,
+      String caption,
+      Widget hapticContent,
+      bool shown = false,
+      Map<String, dynamic> requestHeaders,
+      Duration duration,
+      Gradient gradient,
+      double blurEffect = 0}) {
     return StoryItem(
       Container(
         key: key,
@@ -134,32 +156,40 @@ class StoryItem {
               fit: imageFit,
               requestHeaders: requestHeaders,
             ),
-            SafeArea(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  width: double.infinity,
-                  margin: EdgeInsets.only(
-                    bottom: 24,
+            _bluredContentWrapper(
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      width: double.infinity,
+                      margin: EdgeInsets.only(
+                        bottom: 24,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
+                      color:
+                          caption != null ? Colors.black54 : Colors.transparent,
+                      child: caption != null
+                          ? Text(
+                              caption,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            )
+                          : SizedBox(),
+                    ),
                   ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
-                  ),
-                  color: caption != null ? Colors.black54 : Colors.transparent,
-                  child: caption != null
-                      ? Text(
-                          caption,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.center,
-                        )
-                      : SizedBox(),
                 ),
-              ),
-            )
+                blurEffect: blurEffect),
+            if (gradient != null)
+              Positioned.fill(
+                  child: Container(
+                decoration: BoxDecoration(gradient: gradient),
+              ))
           ],
         ),
       ),
@@ -422,6 +452,12 @@ class StoryView extends StatefulWidget {
   // Controls the playback of the stories
   final StoryController controller;
 
+  final bool enableHorizontalSwipe;
+
+  final VoidCallback onHorizontalSwipeForward;
+
+  final VoidCallback onHorizontalSwipeBackward;
+
   StoryView({
     @required this.storyItems,
     @required this.controller,
@@ -430,6 +466,9 @@ class StoryView extends StatefulWidget {
     this.progressPosition = ProgressPosition.top,
     this.repeat = false,
     this.inline = false,
+    this.enableHorizontalSwipe = true,
+    this.onHorizontalSwipeForward,
+    this.onHorizontalSwipeBackward,
     this.onVerticalSwipeComplete,
   })  : assert(storyItems != null && storyItems.length > 0,
             "[storyItems] should not be null or empty"),
@@ -594,7 +633,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       _beginPlay();
     } else {
       this._currentStory.shown = false;
-      int lastPos = widget.storyItems.indexOf(this._currentStory);
+      final int lastPos = widget.storyItems.indexOf(this._currentStory);
       final previous = widget.storyItems[lastPos - 1];
 
       previous.shown = false;
@@ -639,100 +678,113 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      child: Stack(
-        children: <Widget>[
-          _currentView,
-          Align(
-            alignment: widget.progressPosition == ProgressPosition.top
-                ? Alignment.topCenter
-                : Alignment.bottomCenter,
-            child: SafeArea(
-              bottom: widget.inline ? false : true,
-              // we use SafeArea here for notched and bezeles phones
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: PageBar(
-                  widget.storyItems
-                      .map((it) => PageData(it.duration, it.shown))
-                      .toList(),
-                  this._currentAnimation,
-                  key: UniqueKey(),
-                  indicatorHeight: widget.inline
-                      ? IndicatorHeight.small
-                      : IndicatorHeight.large,
+    return GestureDetector(
+      onHorizontalDragEnd: widget.enableHorizontalSwipe
+          ? (details) {
+              if (details.primaryVelocity > 0 &&
+                  widget.onHorizontalSwipeBackward != null) {
+                widget.onHorizontalSwipeBackward();
+              } else if (details.primaryVelocity < 0 &&
+                  widget.onHorizontalSwipeForward != null) {
+                widget.onHorizontalSwipeForward();
+              }
+            }
+          : null,
+      child: Container(
+        color: Colors.white,
+        child: Stack(
+          children: <Widget>[
+            _currentView,
+            Align(
+              alignment: widget.progressPosition == ProgressPosition.top
+                  ? Alignment.topCenter
+                  : Alignment.bottomCenter,
+              child: SafeArea(
+                bottom: widget.inline ? false : true,
+                // we use SafeArea here for notched and bezeles phones
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: PageBar(
+                    widget.storyItems
+                        .map((it) => PageData(it.duration, it.shown))
+                        .toList(),
+                    this._currentAnimation,
+                    key: UniqueKey(),
+                    indicatorHeight: widget.inline
+                        ? IndicatorHeight.small
+                        : IndicatorHeight.large,
+                  ),
                 ),
               ),
             ),
-          ),
-          Align(
-              alignment: Alignment.centerRight,
-              heightFactor: 1,
-              child: GestureDetector(
-                onTapDown: (details) {
-                  widget.controller.pause();
-                },
-                onTapCancel: () {
-                  widget.controller.play();
-                },
-                onTapUp: (details) {
-                  // if debounce timed out (not active) then continue anim
-                  if (_nextDebouncer?.isActive == false) {
+            Align(
+                alignment: Alignment.centerRight,
+                heightFactor: 1,
+                child: GestureDetector(
+                  onTapDown: (details) {
+                    widget.controller.pause();
+                  },
+                  onTapCancel: () {
                     widget.controller.play();
-                  } else {
-                    widget.controller.next();
-                  }
-                },
-                onVerticalDragStart: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : (details) {
-                        widget.controller.pause();
-                      },
-                onVerticalDragCancel: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : () {
-                        widget.controller.play();
-                      },
-                onVerticalDragUpdate: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : (details) {
-                        if (verticalDragInfo == null) {
-                          verticalDragInfo = VerticalDragInfo();
-                        }
+                  },
+                  onTapUp: (details) {
+                    // if debounce timed out (not active) then continue anim
+                    if (_nextDebouncer?.isActive == false) {
+                      widget.controller.play();
+                    } else {
+                      widget.controller.next();
+                    }
+                  },
+                  onVerticalDragStart: widget.onVerticalSwipeComplete == null
+                      ? null
+                      : (details) {
+                          widget.controller.pause();
+                        },
+                  onVerticalDragCancel: widget.onVerticalSwipeComplete == null
+                      ? null
+                      : () {
+                          widget.controller.play();
+                        },
+                  onVerticalDragUpdate: widget.onVerticalSwipeComplete == null
+                      ? null
+                      : (details) {
+                          if (verticalDragInfo == null) {
+                            verticalDragInfo = VerticalDragInfo();
+                          }
 
-                        verticalDragInfo.update(details.primaryDelta);
+                          verticalDragInfo.update(details.primaryDelta);
 
-                        // TODO: provide callback interface for animation purposes
-                      },
-                onVerticalDragEnd: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : (details) {
-                        widget.controller.play();
-                        // finish up drag cycle
-                        if (!verticalDragInfo.cancel &&
-                            widget.onVerticalSwipeComplete != null) {
-                          widget.onVerticalSwipeComplete(
-                              verticalDragInfo.direction);
-                        }
+                          // TODO: provide callback interface for animation purposes
+                        },
+                  onVerticalDragEnd: widget.onVerticalSwipeComplete == null
+                      ? null
+                      : (details) {
+                          widget.controller.play();
+                          // finish up drag cycle
+                          if (!verticalDragInfo.cancel &&
+                              widget.onVerticalSwipeComplete != null) {
+                            widget.onVerticalSwipeComplete(
+                                verticalDragInfo.direction);
+                          }
 
-                        verticalDragInfo = null;
-                      },
-              )),
-          Align(
-            alignment: Alignment.centerLeft,
-            heightFactor: 1,
-            child: SizedBox(
-                child: GestureDetector(onTap: () {
-                  widget.controller.previous();
-                }),
-                width: 70),
-          ),
-          _currentOrLastStory.hapticContent ?? const SizedBox.shrink()
-        ],
+                          verticalDragInfo = null;
+                        },
+                )),
+            Align(
+              alignment: Alignment.centerLeft,
+              heightFactor: 1,
+              child: SizedBox(
+                  child: GestureDetector(onTap: () {
+                    widget.controller.previous();
+                  }),
+                  width: 70),
+            ),
+            _currentOrLastStory.hapticContent ?? const SizedBox.shrink()
+          ],
+        ),
       ),
     );
   }
@@ -774,7 +826,7 @@ class PageBarState extends State<PageBar> {
   void initState() {
     super.initState();
 
-    int count = widget.pages.length;
+    final int count = widget.pages.length;
     spacing = (count > 15) ? 1 : ((count > 10) ? 2 : 4);
 
     widget.animation.addListener(() {
@@ -871,16 +923,16 @@ class IndicatorOval extends CustomPainter {
 class ContrastHelper {
   static double luminance(int r, int g, int b) {
     final a = [r, g, b].map((it) {
-      double value = it.toDouble() / 255.0;
+      final value = it.toDouble() / 255.0;
       return value <= 0.03928
           ? value / 12.92
           : pow((value + 0.055) / 1.055, 2.4);
     }).toList();
 
-    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+    return (a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722).toDouble();
   }
 
-  static double contrast(rgb1, rgb2) {
+  static double contrast(List<int> rgb1, List<int> rgb2) {
     return luminance(rgb2[0], rgb2[1], rgb2[2]) /
         luminance(rgb1[0], rgb1[1], rgb1[2]);
   }
